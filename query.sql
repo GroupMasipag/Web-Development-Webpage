@@ -1,9 +1,40 @@
-CREATE DATABASE IF NOT EXISTS student_system;
+CREATE DATABASE IF NOT EXISTS student_system
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
 USE student_system;
---user page--
+
 CREATE TABLE IF NOT EXISTS Login (
     Id INT AUTO_INCREMENT PRIMARY KEY,
-    Username VARCHAR(30) NOT NULL,
-    Password VARCHAR(10) NOT NULL
-);
---student page--
+    Username VARCHAR(80) NOT NULL UNIQUE,
+    Password VARCHAR(255) NOT NULL,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS students (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(80) NOT NULL,
+    last_name VARCHAR(80) NOT NULL,
+    student_number VARCHAR(50) NOT NULL UNIQUE,
+    student_id VARCHAR(50) NULL UNIQUE,
+    email VARCHAR(120) NULL UNIQUE,
+    password VARCHAR(255) NULL,
+    course VARCHAR(120) NULL,
+    year_level TINYINT UNSIGNED NULL,
+    year_section_course VARCHAR(150) NOT NULL,
+    picture VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS attendance (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_id INT UNSIGNED NOT NULL,
+    attendance_date DATE NOT NULL,
+    attendance_time TIME NOT NULL,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_student_date (student_id, attendance_date),
+    CONSTRAINT fk_attendance_student
+        FOREIGN KEY (student_id) REFERENCES students(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
