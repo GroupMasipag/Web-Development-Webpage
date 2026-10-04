@@ -18,8 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($first_name === '' || $last_name === '' || $student_number === '' || $year_section_course === '') {
         $error = 'Please complete all required fields.';
+    } elseif (!preg_match('/^[a-zA-Z\s]+$/', $first_name)) {
+        $error = 'First Name may only contain letters and spaces.';
+    } elseif (!preg_match('/^[a-zA-Z\s]+$/', $last_name)) {
+        $error = 'Last Name may only contain letters and spaces.';
     } elseif (!preg_match('/^[A-Za-z0-9_-]+$/', $student_number)) {
-        $error = 'Student Number may contain only letters, numbers, hyphen, and underscore.';
+        $error = 'Student Number may contain only letters, numbers, hyphens, and underscores.';
+    } elseif (!preg_match('/^[A-Za-z0-9\s-]+$/', $year_section_course)) {
+        $error = 'Year & Section / Course may contain only letters, numbers, spaces, and hyphens.';
     } elseif (!isset($_FILES['picture']) || $_FILES['picture']['error'] !== UPLOAD_ERR_OK) {
         $error = 'Please upload a picture.';
     } elseif ($_FILES['picture']['size'] > 2 * 1024 * 1024) {
@@ -89,21 +95,25 @@ include 'includes/app_header.php';
                 <div class="form-group">
                     <label for="first_name">First Name</label>
                     <input type="text" id="first_name" name="first_name" value="<?= h($first_name) ?>" maxlength="80" required>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters and spaces only.</div>
                 </div>
 
                 <div class="form-group">
                     <label for="last_name">Last Name</label>
                     <input type="text" id="last_name" name="last_name" value="<?= h($last_name) ?>" maxlength="80" required>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters and spaces only.</div>
                 </div>
 
                 <div class="form-group">
                     <label for="student_number">Student Number</label>
                     <input type="text" id="student_number" name="student_number" value="<?= h($student_number) ?>" maxlength="50" required>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters, numbers, hyphens, and underscores only.</div>
                 </div>
 
                 <div class="form-group">
                     <label for="year_section_course">Year &amp; Section / Course</label>
                     <input type="text" id="year_section_course" name="year_section_course" value="<?= h($year_section_course) ?>" maxlength="150" placeholder="e.g. BSIT 3-A" required>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters, numbers, spaces, and hyphens only (e.g. BSIT 3-A).</div>
                 </div>
 
                 <div class="form-group">
