@@ -1,4 +1,5 @@
 <?php
+require_once 'session_setup.php';
 session_start();
 require 'config.php';
 
@@ -7,29 +8,74 @@ if (isset($_SESSION['admin_id'])) {
     exit();
 }
 
-$error = '';$success = '';
+$error = '';
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['action']) && $_POST['action'] == 'login') {$username = $conn->real_escape_string($_POST['username']);
-        $password =$conn->real_escape_string($_POST['password']);$query = "SELECT * FROM Login WHERE Username='$username' AND Password='$password'";
-        $result = $conn->query($query);
-        
-        if ($result->num_rows > 0) {
-            $user =$result->fetch_assoc();
-            $_SESSION['admin_id'] =$user['Id'];
+    if (isset($_POST['action']) && $_POST['action'] == 'login') {
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        $stmt = $conn->prepare("SELECT Id, Username, Password FROM Login WHERE Username = ? LIMIT 1");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+
+        $valid_password = false;
+        if ($user) {
+            $stored_password = $user['Password'];
+            $valid_password = password_verify($password, $stored_password) || hash_equals($stored_password, $password);
+        }
+
+        if ($user && $valid_password) {
+            if (!password_get_info($user['Password'])['algo']) {
+                $new_hash = password_hash($password, PASSWORD_DEFAULT);
+                $update = $conn->prepare("UPDATE Login SET Password = ? WHERE Id = ?");
+                $update->bind_param("si", $new_hash, $user['Id']);
+                $update->execute();
+            }
+
+            $_SESSION['admin_id'] = $user['Id'];
+            $_SESSION['username'] = $user['Username'];
             header("Location: dashboard.php");
             exit();
         } else {
             $error = "Invalid credentials.";
         }
-    } elseif (isset($_POST['action']) &&$_POST['action'] == 'register') {
-        $username =$conn->real_escape_string($_POST['reg_username']);$password = $conn->real_escape_string($_POST['reg_password']);
-        
-        $check =$conn->query("SELECT * FROM Login WHERE Username='$username'");
-        if ($check->num_rows > 0) {$error = "Username already exists.";
+    } elseif (isset($_POST['action']) && $_POST['action'] == 'register') {
+        $username = trim($_POST['reg_username'] ?? '');
+        $password = $_POST['reg_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if (
+            strlen($username) < 3 ||
+            strlen($username) > 80 ||
+            (
+                !filter_var($username, FILTER_VALIDATE_EMAIL) &&
+                !preg_match('/^[A-Za-z0-9_.-]+$/', $username)
+            )
+        ) {
+            $error = "Student ID / Email must be a valid email address or use letters, numbers, dot, underscore, or hyphen.";
+        } elseif (strlen($password) < 8) {
+            $error = "Password must contain at least 8 characters.";
+        } elseif ($password !== $confirm_password) {
+            $error = "Passwords do not match.";
         } else {
-            $conn->query("INSERT INTO Login (Username, Password) VALUES ('$username', '$password')");
-            $success = "Account created. You can now sign in.";
+            $check = $conn->prepare("SELECT Id FROM Login WHERE Username = ? LIMIT 1");
+            $check->bind_param("s", $username);
+            $check->execute();
+            $existing = $check->get_result();
+
+            if ($existing->num_rows > 0) {
+                $error = "Username already exists.";
+            } else {
+                $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                $insert = $conn->prepare("INSERT INTO Login (Username, Password) VALUES (?, ?)");
+                $insert->bind_param("ss", $username, $password_hash);
+                $insert->execute();
+                $success = "Account created. You can now sign in.";
+            }
         }
     }
 }
@@ -39,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login & Register · Fixed</title>
+    <title>5 Little Monkeys · Login</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -62,16 +108,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <p>Sign in to start your session</p>
                 </div>
                 
-                <?php if($error) echo "<div class='msg'>$error</div>"; ?>
-                <?php if($success) echo "<div style='color:#4caf50;' class='msg'>$success</div>"; ?>
+                <?php if ($error): ?>
+                    <div class="msg"><?= htmlspecialchars($error) ?></div>
+                <?php endif; ?>
+                <?php if ($success): ?>
+                    <div class="msg success-msg"><?= htmlspecialchars($success) ?></div>
+                <?php endif; ?>
                 
-                <form action="login.php" method="POST">
+                <form action="Login.php" method="POST">
                     <input type="hidden" name="action" value="login">
                     <div class="input-group">
                         <input type="text" name="username" placeholder="Student ID / Email" required>
                     </div>
                     <div class="input-group">
-                        <input type="password" name="password" placeholder="Password" maxlength="10" required>
+                        <input type="password" name="password" placeholder="Password" required>
                     </div>
                     <button type="submit" class="action-btn">Sign In</button>
                     <a href="#" class="forgot-link">I forgot my password</a>
@@ -87,13 +137,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <p>Fill in the details to register</p>
                 </div>
                 
-                <form action="login.php" method="POST">
+                <form action="Login.php" method="POST" id="registerAccountForm">
                     <input type="hidden" name="action" value="register">
                     <div class="input-group">
-                        <input type="text" name="reg_username" placeholder="Username" required>
+                        <input type="text" name="reg_username" placeholder="Student ID / Email" required>
                     </div>
                     <div class="input-group">
-                        <input type="password" name="reg_password" placeholder="Password (Max 10 chars)" maxlength="10" required>
+                        <input type="password" id="reg_password" name="reg_password" placeholder="Password" minlength="8" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Password" minlength="8" required>
+                        <div id="passwordMatch" class="field-validation"></div>
                     </div>
                     <a href="#" class="text-link" onclick="switchForm('login')">Already have an account? Sign in!</a>
                     <button type="submit" class="action-btn" style="margin-top: 15px;">Register</button>
@@ -127,6 +181,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 `;
             }
         }
+
+        const passwordInput = document.getElementById('reg_password');
+        const confirmInput = document.getElementById('confirm_password');
+        const passwordMatch = document.getElementById('passwordMatch');
+        const registerForm = document.getElementById('registerAccountForm');
+
+        function updatePasswordMatch() {
+            if (confirmInput.value === '') {
+                passwordMatch.textContent = '';
+                passwordMatch.className = 'field-validation';
+                return;
+            }
+
+            if (passwordInput.value === confirmInput.value) {
+                passwordMatch.textContent = 'Passwords match.';
+                passwordMatch.className = 'field-validation match-success';
+            } else {
+                passwordMatch.textContent = 'Passwords do not match.';
+                passwordMatch.className = 'field-validation match-error';
+            }
+        }
+
+        passwordInput.addEventListener('input', updatePasswordMatch);
+        confirmInput.addEventListener('input', updatePasswordMatch);
+
+        registerForm.addEventListener('submit', function (event) {
+            const matches = passwordInput.value === confirmInput.value;
+
+            if (!matches) {
+                event.preventDefault();
+                updatePasswordMatch();
+                confirmInput.focus();
+            }
+        });
     </script>
 </body>
 </html>

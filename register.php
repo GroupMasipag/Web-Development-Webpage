@@ -1,147 +1,68 @@
 <?php
-session_start();
-require 'config.php';
+require_once 'bootstrap.php';
+
+$error = $_SESSION['error'] ?? '';
+$success = $_SESSION['success'] ?? '';
+unset($_SESSION['error'], $_SESSION['success']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Registration</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 15px;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        .register-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 600px;
-            width: 100%;
-        }
-        .register-card h2 {
-            color: #4a3f8f;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .register-card p.subtitle {
-            text-align: center;
-            color: #777;
-            margin-bottom: 30px;
-        }
-        .form-label {
-            font-weight: 600;
-            color: #333;
-        }
-        .form-control, .form-select {
-            border-radius: 10px;
-            padding: 12px;
-            border: 1px solid #ddd;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        .btn-register {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: 600;
-            width: 100%;
-            transition: all 0.3s;
-        }
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-        .btn-back {
-            text-decoration: none;
-            color: #667eea;
-            display: block;
-            text-align: center;
-            margin-top: 15px;
-            font-weight: 600;
-        }
-        .btn-back:hover {
-            color: #4a3f8f;
-        }
-        .alert {
-            border-radius: 10px;
-        }
-    </style>
+    <title>5 Little Monkeys · Student Registration</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-
-    <div class="register-card">
-        <h2>📝 Student Registration</h2>
+<body class="register-page">
+    <main class="register-card">
+        <h2>Student Registration</h2>
         <p class="subtitle">Fill up the form to create your account</p>
 
-        <?php
-        // Ipakita ang error/success message kung meron
-        if (isset($_SESSION['error'])) {
-            echo '<div class="alert alert-danger">' . $_SESSION['error'] . '</div>';
-            unset($_SESSION['error']);
-        }
-        if (isset($_SESSION['success'])) {
-            echo '<div class="alert alert-success">' . $_SESSION['success'] . '</div>';
-            unset($_SESSION['success']);
-        }
-        ?>
+        <?php if ($error): ?>
+            <div class="alert alert-error"><?= h($error) ?></div>
+        <?php endif; ?>
 
-        <form action="register_process.php" method="POST">
-            <div class="mb-3">
-                <label for="student_id" class="form-label">Student ID</label>
-                <input type="text" class="form-control" id="student_id" name="student_id" 
-                       placeholder="e.g., 2024-0001" required>
+        <?php if ($success): ?>
+            <div class="alert alert-success"><?= h($success) ?></div>
+        <?php endif; ?>
+
+        <form method="post" action="register_process.php" autocomplete="off">
+            <div class="form-group">
+                <label for="student_id">Student ID</label>
+                <input type="text" id="student_id" name="student_id" maxlength="50" placeholder="e.g. 2024-0001" required>
             </div>
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="first_name" class="form-label">First Name</label>
-                    <input type="text" class="form-control" id="first_name" name="first_name" 
-                           placeholder="Juan" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="first_name">First Name</label>
+                    <input type="text" id="first_name" name="first_name" maxlength="80" placeholder="Juan" required>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label for="last_name" class="form-label">Last Name</label>
-                    <input type="text" class="form-control" id="last_name" name="last_name" 
-                           placeholder="Dela Cruz" required>
+
+                <div class="form-group">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" maxlength="80" placeholder="Dela Cruz" required>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" 
-                       placeholder="juan@email.com" required>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" maxlength="120" placeholder="juan@email.com" required>
             </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" name="password" 
-                       placeholder="Minimum 6 characters" minlength="6" required>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" minlength="6" placeholder="Minimum 6 characters" required>
             </div>
 
-            <div class="mb-3">
-                <label for="confirm_password" class="form-label">Confirm Password</label>
-                <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
-                       placeholder="Re-enter your password" minlength="6" required>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" minlength="6" placeholder="Re-enter your password" required>
             </div>
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="course" class="form-label">Course</label>
-                    <select class="form-select" id="course" name="course" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="course">Course</label>
+                    <select id="course" name="course" required>
                         <option value="">-- Select Course --</option>
                         <option value="BSIT">BSIT - Information Technology</option>
                         <option value="BSCS">BSCS - Computer Science</option>
@@ -149,9 +70,10 @@ require 'config.php';
                         <option value="BSECE">BSECE - Electronics Engineering</option>
                     </select>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label for="year_level" class="form-label">Year Level</label>
-                    <select class="form-select" id="year_level" name="year_level" required>
+
+                <div class="form-group">
+                    <label for="year_level">Year Level</label>
+                    <select id="year_level" name="year_level" required>
                         <option value="">-- Select Year --</option>
                         <option value="1">1st Year</option>
                         <option value="2">2nd Year</option>
@@ -161,11 +83,9 @@ require 'config.php';
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-register">Register</button>
-            <a href="index.php" class="btn-back">← Back to Home</a>
+            <button type="submit" class="register-submit">Register</button>
+            <a href="Login.php" class="register-back">Back to Login</a>
         </form>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </main>
 </body>
 </html>
