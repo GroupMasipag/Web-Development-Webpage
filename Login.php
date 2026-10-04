@@ -16,7 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
 
-        $stmt = $conn->prepare("SELECT Id, Username, Password FROM Login WHERE Username = ? LIMIT 1");
+        // Admin Check ( temporary )
+        if ($username === 'admin' && $password === 'gianmark123') {
+            $_SESSION['admin_id'] = 9999; 
+            $_SESSION['username'] = 'Administrator';
+            $_SESSION['role'] = 'admin';
+            header("Location: dashboard.php");
+            exit();
+        }
+
+        // Normal User DB Check
+        $stmt = $conn->prepare("SELECT Id, Username, Password, Role FROM Login WHERE Username = ? LIMIT 1");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -38,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             $_SESSION['admin_id'] = $user['Id'];
             $_SESSION['username'] = $user['Username'];
+            $_SESSION['role'] = $user['Role'];
+            
             header("Location: dashboard.php");
             exit();
         } else {
@@ -48,14 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $password = $_POST['reg_password'] ?? '';
         $confirm_password = $_POST['confirm_password'] ?? '';
 
-        if (
-            strlen($username) < 3 ||
-            strlen($username) > 80 ||
-            (
-                !filter_var($username, FILTER_VALIDATE_EMAIL) &&
-                !preg_match('/^[A-Za-z0-9_.-]+$/', $username)
-            )
-        ) {
+        if (strlen($username) < 3 || strlen($username) > 80 || (!filter_var($username, FILTER_VALIDATE_EMAIL) && !preg_match('/^[A-Za-z0-9_.-]+$/', $username))) {
             $error = "Student ID / Email must be a valid email address or use letters, numbers, dot, underscore, or hyphen.";
         } elseif (strlen($password) < 8) {
             $error = "Password must contain at least 8 characters.";
