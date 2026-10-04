@@ -16,6 +16,10 @@ $page_title = $page_title ?? '5 Little Monkeys';
             <a href="dashboard.php">Attendance</a>
             <a href="student_registration.php">Student Registration</a>
             <a href="attendance_log.php">Attendance Log</a>
+            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                <a href="#" style="color: #ffb703; font-weight: bold;">Admin Settings</a>
+            <?php endif; ?>
+            
             <a href="Logout.php">Logout</a>
         </nav>
     </header>

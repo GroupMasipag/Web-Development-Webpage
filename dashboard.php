@@ -63,10 +63,27 @@ include 'includes/app_header.php';
                         required
                     >
                     <div class="hint">The cursor is automatically ready for the next student number.</div>
-                    <button class="btn btn-primary" type="submit">Record Attendance</button>
-                    <a class="btn btn-secondary" href="student_registration.php">Student Registration</a>
+                    
+                    <!-- Buttons visible to ALL logged-in users -->
+                    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                        <button class="btn btn-primary" type="submit">Record Attendance</button>
+                        <a class="btn btn-secondary" href="student_registration.php">Student Registration</a>
+                        <a class="btn btn-secondary" href="attendance_log.php">View Log</a>
+                    </div>
                 </form>
             </div>
+
+            <!-- Admin Controls: Visible ONLY to Admins -->
+            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                <div class="admin-panel" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; text-align: left;">
+                    <h3 style="margin-bottom: 10px; font-size: 16px; color: #d32f2f;">Admin Controls</h3>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Advanced system operations restricted from standard users.</p>
+                    <div style="display: flex; gap: 10px;">
+                        <a class="btn btn-secondary" href="#" style="padding: 8px 12px; font-size: 12px;">Export Data (CSV)</a>
+                        <a class="btn btn-secondary" href="#" style="padding: 8px 12px; font-size: 12px;">System Settings</a>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <?php if ($status): ?>
                 <div class="attendance-status <?= h($status_class) ?>">
