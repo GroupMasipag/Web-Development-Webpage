@@ -5,7 +5,6 @@ CREATE DATABASE IF NOT EXISTS student_system
 USE student_system;
 
 -- USER LOGIN TABLE --
-DROP TABLE IF EXISTS Login; -- remove existing login table --
 CREATE TABLE IF NOT EXISTS Login (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     Username VARCHAR(80) NOT NULL UNIQUE,
