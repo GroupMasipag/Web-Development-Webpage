@@ -111,7 +111,6 @@ include 'includes/app_header.php';
                         
                         <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
                             <button class="btn btn-primary" type="submit">Record Attendance</button>
-                            <a class="btn btn-secondary" href="student_registration.php">Student Registration</a>
                             <a class="btn btn-secondary" href="attendance_log.php">View Log</a>
                         </div>
                     <?php else: ?>
