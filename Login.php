@@ -167,14 +167,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             width: 100%;
         }
 
-        /* STRICT UNIFORM SPACING FOR ALL ROWS */
+        /* UNIFORM MARGIN BETWEEN FIELDS */
         .field-group {
             margin-bottom: 16px !important;
             position: relative;
             text-align: left;
         }
 
-        /* TWO-COLUMN ROW EXACT FIT */
+        /* TWO-COLUMN ROW */
         .form-row {
             display: flex;
             gap: 12px;
@@ -185,7 +185,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             position: relative;
         }
 
-        /* ERROR NOTIFICATION - ABSOLUTE POSITIONING TO NOT AFFECT HEIGHT */
+        /* ALWAYS DISPLAYED SUBTEXT FOR PASSWORD REQUIREMENT */
+        .field-static-subtext {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            text-align: left;
+            margin-top: 5px;
+            padding-left: 2px;
+        }
+
+        /* POP-UP ERROR NOTIFICATION FOR OTHER FIELDS */
         .field-error-notif {
             display: none;
             position: absolute;
@@ -377,7 +386,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="field-error-notif" id="err_year_section_course">Letters, numbers, spaces, hyphens only.</div>
                     </div>
 
-                    <!-- Password -->
+                    <!-- Password (ALWAYS DISPLAYED REQUIREMENT NOTE) -->
                     <div class="field-group">
                         <div class="input-group">
                             <div class="password-wrapper">
@@ -387,10 +396,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </button>
                             </div>
                         </div>
-                        <div class="field-error-notif" id="err_reg_password">Min 8 chars with 1 special char.</div>
+                        <div class="field-static-subtext">Minimum 8 characters, at least 1 special character.</div>
                     </div>
 
-                    <!-- Confirm Password -->
+                    <!-- Confirm Password (POP-UP MATCH NOTIF) -->
                     <div class="field-group">
                         <div class="input-group">
                             <div class="password-wrapper">
@@ -472,7 +481,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         });
 
-        // REAL-TIME VALIDATION NOTIFICATIONS
+        // REAL-TIME VALIDATION
         const nameRegex = /^[a-zA-Z\s\-\'\.]*$/;
         const studentNumRegex = /^[A-Za-z0-9_-]*$/;
         const yearCourseRegex = /^[A-Za-z0-9\s-]*$/;
@@ -481,11 +490,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         function validateField(inputEl, notifEl, regexCondition) {
             const val = inputEl.value;
             if (val.length > 0 && !regexCondition.test(val)) {
-                notifEl.style.display = 'block';
+                if (notifEl) notifEl.style.display = 'block';
                 inputEl.classList.add('input-error');
                 return false;
             } else {
-                notifEl.style.display = 'none';
+                if (notifEl) notifEl.style.display = 'none';
                 inputEl.classList.remove('input-error');
                 return true;
             }
@@ -509,8 +518,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         yearCourseInput.addEventListener('input', () => validateField(yearCourseInput, errYearCourse, yearCourseRegex));
 
         const passwordInput = document.getElementById('reg_password');
-        const errPassword = document.getElementById('err_reg_password');
-        passwordInput.addEventListener('input', () => validateField(passwordInput, errPassword, passwordRegex));
+        passwordInput.addEventListener('input', () => {
+            const val = passwordInput.value;
+            if (val.length > 0 && !passwordRegex.test(val)) {
+                passwordInput.classList.add('input-error');
+            } else {
+                passwordInput.classList.remove('input-error');
+            }
+        });
 
         const confirmInput = document.getElementById('confirm_password');
         const errConfirm = document.getElementById('err_confirm_password');
@@ -538,8 +553,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             const v2 = validateField(lastNameInput, errLastName, nameRegex);
             const v3 = validateField(regUsernameInput, errRegUsername, studentNumRegex);
             const v4 = validateField(yearCourseInput, errYearCourse, yearCourseRegex);
-            const v5 = validateField(passwordInput, errPassword, passwordRegex);
+            const v5 = passwordRegex.test(passwordInput.value);
             const v6 = validateConfirmPassword();
+
+            if (!v5) {
+                passwordInput.classList.add('input-error');
+            }
 
             if (!v1 || !v2 || !v3 || !v4 || !v5 || !v6) {
                 event.preventDefault();
@@ -551,4 +570,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <?php endif; ?>
     </script>
 </body>
-</html> 
+</html>
