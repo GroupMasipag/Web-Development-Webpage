@@ -11,18 +11,24 @@ $status_class = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_id'])) {
     $reset_id = (int)$_POST['reset_id'];
-    $new_password = 'Changeme123!';
-    $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+    $new_password = $_POST['new_password'] ?? '';
 
-    $stmt = $conn->prepare("UPDATE Login SET Password = ? WHERE Id = ?");
-    $stmt->bind_param("si", $hashed_password, $reset_id);
-    
-    if ($stmt->execute()) {
-        $status = "Password successfully reset to: " . $new_password;
-        $status_class = "status-success";
-    } else {
-        $status = "Failed to reset password.";
+    if (strlen($new_password) < 8 || !preg_match('/[^a-zA-Z0-9]/', $new_password)) {
+        $status = "Error: Password must contain at least 8 characters and 1 special character.";
         $status_class = "status-error";
+    } else {
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+
+        $stmt = $conn->prepare("UPDATE Login SET Password = ? WHERE Id = ?");
+        $stmt->bind_param("si", $hashed_password, $reset_id);
+        
+        if ($stmt->execute()) {
+            $status = "Password successfully updated.";
+            $status_class = "status-success";
+        } else {
+            $status = "Failed to reset password.";
+            $status_class = "status-error";
+        }
     }
 }
 
@@ -65,9 +71,10 @@ include 'includes/app_header.php';
                                     <td><?= h($user['Username']) ?></td>
                                     <td><?= h($user['CreatedAt']) ?></td>
                                     <td>
-                                        <form method="POST" onsubmit="return confirm('Reset password for <?= h($user['Username']) ?> to Changeme123!?');" style="margin: 0;">
+                                        <form method="POST" onsubmit="return confirm('Are you sure you want to change the password for <?= h($user['Username']) ?>?');" style="margin: 0; display: flex; gap: 5px; align-items: center; justify-content: center;">
                                             <input type="hidden" name="reset_id" value="<?= h($user['Id']) ?>">
-                                            <button type="submit" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px; border: none; cursor: pointer;">Reset Password</button>
+                                            <input type="text" name="new_password" placeholder="New Password" required minlength="8" style="padding: 6px; width: 140px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc;">
+                                            <button type="submit" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; border: none; cursor: pointer;">Update</button>
                                         </form>
                                     </td>
                                 </tr>

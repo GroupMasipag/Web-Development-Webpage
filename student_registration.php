@@ -18,10 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($first_name === '' || $last_name === '' || $student_number === '' || $year_section_course === '') {
         $error = 'Please complete all required fields.';
-    } elseif (!preg_match('/^[a-zA-Z\s]+$/', $first_name)) {
-        $error = 'First Name may only contain letters and spaces.';
-    } elseif (!preg_match('/^[a-zA-Z\s]+$/', $last_name)) {
-        $error = 'Last Name may only contain letters and spaces.';
+    } elseif (!preg_match('/^[a-zA-Z\s\-\'\.]+$/', $first_name)) {
+        $error = 'First Name may only contain letters, spaces, hyphens, apostrophes, and periods.';
+    } elseif (!preg_match('/^[a-zA-Z\s\-\'\.]+$/', $last_name)) {
+        $error = 'Last Name may only contain letters, spaces, hyphens, apostrophes, and periods.';
     } elseif (!preg_match('/^[A-Za-z0-9_-]+$/', $student_number)) {
         $error = 'Student Number may contain only letters, numbers, hyphens, and underscores.';
     } elseif (!preg_match('/^[A-Za-z0-9\s-]+$/', $year_section_course)) {
@@ -95,13 +95,13 @@ include 'includes/app_header.php';
                 <div class="form-group">
                     <label for="first_name">First Name</label>
                     <input type="text" id="first_name" name="first_name" value="<?= h($first_name) ?>" maxlength="80" required>
-                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters and spaces only.</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters, spaces, hyphens, apostrophes, and periods only.</div>
                 </div>
 
                 <div class="form-group">
                     <label for="last_name">Last Name</label>
                     <input type="text" id="last_name" name="last_name" value="<?= h($last_name) ?>" maxlength="80" required>
-                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters and spaces only.</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters, spaces, hyphens, apostrophes, and periods only.</div>
                 </div>
 
                 <div class="form-group">

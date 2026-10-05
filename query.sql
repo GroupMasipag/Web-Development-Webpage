@@ -37,8 +37,17 @@ CREATE TABLE IF NOT EXISTS attendance (
     attendance_date DATE NOT NULL,
     attendance_time TIME NOT NULL,
     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_student_date (student_id, attendance_date),
     CONSTRAINT fk_attendance_student
         FOREIGN KEY (student_id) REFERENCES students(id)
         ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- attendance schedule for admin --
+CREATE TABLE IF NOT EXISTS attendance_schedule (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    class_name VARCHAR(150) NULL,
+    schedule_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;

@@ -324,3 +324,25 @@ th { background: #7966b3; color: #fff; }
 .close-btn:hover {
     opacity: 1;
 }
+
+.timer-bar-container {
+    width: 100%;
+    height: 6px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.timer-bar {
+    height: 100%;
+    width: 100%;
+    background-color: #6b7fd7;
+    transform-origin: left;
+    animation: timerDeplete 5s linear forwards;
+}
+
+@keyframes timerDeplete {
+    0% { transform: scaleX(1); }
+    100% { transform: scaleX(0); }
+}
