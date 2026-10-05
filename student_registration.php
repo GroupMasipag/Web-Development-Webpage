@@ -8,53 +8,68 @@ $success = '';
 $first_name = '';
 $last_name = '';
 $student_number = '';
-$course = '';
-$year_section = '';
+$year_section_course = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name = trim($_POST['last_name'] ?? '');
     $student_number = trim($_POST['student_number'] ?? '');
-    $course = trim($_POST['course'] ?? '');
-    $year_section = trim($_POST['year_section'] ?? '');
+    $year_section_course = trim($_POST['year_section_course'] ?? '');
 
-    if ($first_name === '' || $last_name === '' || $student_number === '' || $course === '' || $year_section === '') {
-        $error = 'Please fill out all text fields.';
-    } elseif (!isset($_FILES['picture']) || $_FILES['picture']['error'] === UPLOAD_ERR_NO_FILE) {
-        $error = 'Please upload a student picture.';
+    if ($first_name === '' || $last_name === '' || $student_number === '' || $year_section_course === '') {
+        $error = 'Please complete all required fields.';
+    } elseif (!preg_match('/^[a-zA-Z\s\-\'\.]+$/', $first_name)) {
+        $error = 'First Name may only contain letters, spaces, hyphens, apostrophes, and periods.';
+    } elseif (!preg_match('/^[a-zA-Z\s\-\'\.]+$/', $last_name)) {
+        $error = 'Last Name may only contain letters, spaces, hyphens, apostrophes, and periods.';
+    } elseif (!preg_match('/^[A-Za-z0-9_-]+$/', $student_number)) {
+        $error = 'Student Number may contain only letters, numbers, hyphens, and underscores.';
+    } elseif (!preg_match('/^[A-Za-z0-9\s-]+$/', $year_section_course)) {
+        $error = 'Year & Section / Course may contain only letters, numbers, spaces, and hyphens.';
+    } elseif (!isset($_FILES['picture']) || $_FILES['picture']['error'] !== UPLOAD_ERR_OK) {
+        $error = 'Please upload a picture.';
+    } elseif ($_FILES['picture']['size'] > 2 * 1024 * 1024) {
+        $error = 'Picture size must not exceed 2 MB.';
     } else {
-        $target_dir = "uploads/";
-        $imageFileType = strtolower(pathinfo($_FILES["picture"]["name"], PATHINFO_EXTENSION));
+        $tmp = $_FILES['picture']['tmp_name'];
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
         
-        $allowed_types = ['jpg', 'jpeg', 'png'];
-        
-        if (!in_array($imageFileType, $allowed_types)) {
-            $error = 'Only JPG, JPEG, and PNG files are allowed.';
+        $allowed_mimes = ['image/jpeg', 'image/png'];
+
+        if (!in_array($mime, $allowed_mimes)) {
+            $error = 'Only JPEG/JPG and PNG pictures are allowed.';
         } else {
-            $stmt = $conn->prepare("SELECT id FROM students WHERE student_number = ? LIMIT 1");
-            $stmt->bind_param("s", $student_number);
-            $stmt->execute();
-            if ($stmt->get_result()->num_rows > 0) {
-                $error = 'Student number already exists.';
+            $check = $conn->prepare("SELECT id FROM students WHERE student_number = ? LIMIT 1");
+            $check->bind_param("s", $student_number);
+            $check->execute();
+
+            if ($check->get_result()->fetch_assoc()) {
+                $error = 'That student number is already registered.';
             } else {
-                $new_filename = $student_number . "." . $imageFileType;
-                $target_file = $target_dir . $new_filename;
+                $ext = ($mime === 'image/png') ? '.png' : '.jpg';
+                $filename = $student_number . $ext;
+                $upload_dir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads';
 
-                if (move_uploaded_file($_FILES["picture"]["tmp_name"], $target_file)) {
-                    $year_section_course = $course . ' - ' . $year_section;
+                if (!is_dir($upload_dir)) {
+                    mkdir($upload_dir, 0755, true);
+                }
 
-                    $insert = $conn->prepare("INSERT INTO students (first_name, last_name, student_number, course, year_section_course, picture) VALUES (?, ?, ?, ?, ?, ?)");
-                    $insert->bind_param("ssssss", $first_name, $last_name, $student_number, $course, $year_section_course, $target_file);
-                    
-                    if ($insert->execute()) {
-                        $success = 'Student registered successfully!';
-                        
-                        $first_name = $last_name = $student_number = $course = $year_section = '';
-                    } else {
-                        $error = 'Database error: ' . $conn->error;
-                    }
+                $destination = $upload_dir . DIRECTORY_SEPARATOR . $filename;
+
+                if (!move_uploaded_file($tmp, $destination)) {
+                    $error = 'Unable to save the uploaded picture. Check the uploads folder permissions.';
                 } else {
-                    $error = 'Sorry, there was an error saving your file.';
+                    $picture_path = 'uploads/' . $filename;
+                    $stmt = $conn->prepare(
+                        "INSERT INTO students (first_name, last_name, student_number, year_section_course, picture)
+                         VALUES (?, ?, ?, ?, ?)"
+                    );
+                    $stmt->bind_param("sssss", $first_name, $last_name, $student_number, $year_section_course, $picture_path);
+                    $stmt->execute();
+
+                    $success = 'Student registered successfully.';
+                    
+                    $first_name = $last_name = $student_number = $year_section_course = '';
                 }
             }
         }
@@ -64,63 +79,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $page_title = '5 Little Monkeys · Student Registration';
 include 'includes/app_header.php';
 ?>
+        <section class="registration">
+            <h1>Student Registration</h1>
+            <p class="subtitle">Register the student information and upload a JPEG or PNG picture.</p>
 
-<section class="dashboard-card" style="max-width: 600px; margin: 0 auto;">
-    <div class="scan-box" style="text-align: left;">
-        <h1 style="text-align: center;">Register New Student</h1>
-        <p class="subtitle" style="text-align: center;">Register the student information and upload a picture.</p>
-        
-        <?php if ($error): ?>
-            <div class="attendance-status status-error" style="margin-bottom: 20px;">
-                <?= h($error) ?>
-            </div>
-        <?php endif; ?>
-        <?php if ($success): ?>
-            <div class="attendance-status status-success" style="margin-bottom: 20px;">
-                <?= h($success) ?>
-            </div>
-        <?php endif; ?>
+            <?php if ($error): ?>
+                <div class="alert alert-error"><?= h($error) ?></div>
+            <?php endif; ?>
 
-        <form action="student_registration.php" method="POST" enctype="multipart/form-data">
-            
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">First Name</label>
-                <input type="text" name="first_name" value="<?= h($first_name) ?>" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
-            </div>
+            <?php if ($success): ?>
+                <div class="alert alert-success"><?= h($success) ?></div>
+            <?php endif; ?>
 
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Last Name</label>
-                <input type="text" name="last_name" value="<?= h($last_name) ?>" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Student Number</label>
-                <input type="text" name="student_number" value="<?= h($student_number) ?>" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
-            </div>
-
-            <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 15px;">
-                <div class="form-group" style="flex: 1;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Course (e.g. BSIT)</label>
-                    <input type="text" name="course" value="<?= h($course) ?>" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
+            <form method="post" enctype="multipart/form-data" autocomplete="off">
+                <div class="form-group">
+                    <label for="first_name">First Name</label>
+                    <input type="text" id="first_name" name="first_name" value="<?= h($first_name) ?>" maxlength="80" required>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters, spaces, hyphens, apostrophes, and periods only.</div>
                 </div>
-                
-                <div class="form-group" style="flex: 1;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Year & Section (e.g. 3-A)</label>
-                    <input type="text" name="year_section" value="<?= h($year_section) ?>" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
+
+                <div class="form-group">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" value="<?= h($last_name) ?>" maxlength="80" required>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters, spaces, hyphens, apostrophes, and periods only.</div>
                 </div>
-            </div>
 
-            <div class="form-group" style="margin-bottom: 25px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Upload Picture (JPG, JPEG, PNG)</label>
-                <input type="file" name="picture" accept=".jpg, .jpeg, .png" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
-            </div>
+                <div class="form-group">
+                    <label for="student_number">Student Number</label>
+                    <input type="text" id="student_number" name="student_number" value="<?= h($student_number) ?>" maxlength="50" required>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters, numbers, hyphens, and underscores only.</div>
+                </div>
 
-            <div style="display: flex; gap: 10px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">Register Student</button>
-                <a href="dashboard.php" class="btn btn-secondary" style="flex: 1; text-align: center;">Cancel</a>
-            </div>
-        </form>
-    </div>
-</section>
+                <div class="form-group">
+                    <label for="year_section_course">Year &amp; Section / Course</label>
+                    <input type="text" id="year_section_course" name="year_section_course" value="<?= h($year_section_course) ?>" maxlength="150" placeholder="e.g. BSIT 3-A" required>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Letters, numbers, spaces, and hyphens only (e.g. BSIT 3-A).</div>
+                </div>
 
+                <div class="form-group">
+                    <label for="picture">Upload Picture (JPEG/JPG/PNG, max 2 MB)</label>
+                    <input type="file" id="picture" name="picture" accept="image/jpeg,image/png,.jpg,.jpeg,.png" required>
+                    <img id="preview" class="preview" alt="Picture preview">
+                </div>
+
+                <div class="actions">
+                    <button class="btn btn-primary" type="submit">Submit</button>
+                    <a class="btn btn-secondary" href="dashboard.php">Cancel</a>
+                </div>
+            </form>
+        </section>
+
+    <script>
+        document.getElementById('picture').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('preview');
+
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+                preview.removeAttribute('src');
+            }
+        });
+    </script>
 <?php include 'includes/app_footer.php'; ?>

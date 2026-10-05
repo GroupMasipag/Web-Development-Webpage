@@ -8,78 +8,63 @@ if (isset($_SESSION['admin_id'])) {
     exit();
 }
 
-$error = '';
-$success = '';
+$error = '';$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['action']) && $_POST['action'] == 'login') {
+    if (isset($_POST['action']) &&$_POST['action'] == 'login') {
         $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
+        $password =$_POST['password'] ?? '';
 
-        // Admin Check ( temporary )
-        if ($username === 'admin' && $password === 'gianmark123') {
-            $_SESSION['admin_id'] = 9999; 
-            $_SESSION['username'] = 'Administrator';
-            $_SESSION['role'] = 'admin';
+        if ($username === 'admin' && $password === 'gianmark123') {$_SESSION['admin_id'] = 9999;
+            $_SESSION['username'] = 'Administrator';$_SESSION['role'] = 'admin';
             header("Location: dashboard.php");
             exit();
         }
 
-        // Normal User DB Check
-        $stmt = $conn->prepare("SELECT Id, Username, Password, Role FROM Login WHERE Username = ? LIMIT 1");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $user = $result->fetch_assoc();
+        $stmt =$conn->prepare("SELECT Id, Username, Password, Role FROM Login WHERE Username = ? LIMIT 1");
+        $stmt->bind_param("s", $username);$stmt->execute();
+        $result =$stmt->get_result();
+        $user =$result->fetch_assoc();
 
         $valid_password = false;
-        if ($user) {
-            $stored_password = $user['Password'];
-            $valid_password = password_verify($password, $stored_password) || hash_equals($stored_password, $password);
+        if ($user) {$stored_password = $user['Password'];$valid_password = password_verify($password,$stored_password) || hash_equals($stored_password,$password);
         }
 
-        if ($user && $valid_password) {
+        if ($user &&$valid_password) {
             if (!password_get_info($user['Password'])['algo']) {
                 $new_hash = password_hash($password, PASSWORD_DEFAULT);
-                $update = $conn->prepare("UPDATE Login SET Password = ? WHERE Id = ?");
-                $update->bind_param("si", $new_hash, $user['Id']);
-                $update->execute();
+                $update =$conn->prepare("UPDATE Login SET Password = ? WHERE Id = ?");
+                $update->bind_param("si", $new_hash, $user['Id']);$update->execute();
             }
 
-            $_SESSION['admin_id'] = $user['Id'];
-            $_SESSION['username'] = $user['Username'];
-            $_SESSION['role'] = $user['Role'];
+            $_SESSION['admin_id'] =$user['Id'];
+            $_SESSION['username'] =$user['Username'];
+            $_SESSION['role'] =$user['Role'];
             
             header("Location: dashboard.php");
             exit();
         } else {
             $error = "Invalid credentials.";
         }
-    } elseif (isset($_POST['action']) && $_POST['action'] == 'register') {
+    } elseif (isset($_POST['action']) &&$_POST['action'] == 'register') {
         $username = trim($_POST['reg_username'] ?? '');
-        $password = $_POST['reg_password'] ?? '';
-        $confirm_password = $_POST['confirm_password'] ?? '';
+        $password =$_POST['reg_password'] ?? '';
+        $confirm_password =$_POST['confirm_password'] ?? '';
 
-        if (strlen($username) < 3 || strlen($username) > 80 || (!filter_var($username, FILTER_VALIDATE_EMAIL) && !preg_match('/^[A-Za-z0-9_.-]+$/', $username))) {
-            $error = "Student ID / Email must be a valid email address or use letters, numbers, dot, underscore, or hyphen.";
-        } elseif (strlen($password) < 8) {
-            $error = "Password must contain at least 8 characters.";
-        } elseif ($password !== $confirm_password) {
-            $error = "Passwords do not match.";
+        if (strlen($username) < 3 || strlen($username) > 80 || (!filter_var($username, FILTER_VALIDATE_EMAIL) && !preg_match('/^[A-Za-z0-9_.-]+$/', $username))) {$error = "Student ID / Email must be a valid email address or use letters, numbers, dot, underscore, or hyphen.";
+        } elseif (strlen($password) < 8 || !preg_match('/[^a-zA-Z0-9]/', $password)) {$error = "Password must contain at least 8 characters and 1 special character.";
+        } elseif ($password !== $confirm_password) {$error = "Passwords do not match.";
         } else {
-            $check = $conn->prepare("SELECT Id FROM Login WHERE Username = ? LIMIT 1");
-            $check->bind_param("s", $username);
-            $check->execute();
-            $existing = $check->get_result();
+            $check =$conn->prepare("SELECT Id FROM Login WHERE Username = ? LIMIT 1");
+            $check->bind_param("s", $username);$check->execute();
+            $existing =$check->get_result();
 
-            if ($existing->num_rows > 0) {
-                $error = "Username already exists.";
+            if ($existing->num_rows > 0) {$error = "Username already exists.";
             } else {
                 $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                $insert = $conn->prepare("INSERT INTO Login (Username, Password) VALUES (?, ?)");
-                $insert->bind_param("ss", $username, $password_hash);
-                $insert->execute();
-                $success = "Account created. You can now sign in.";
+                $insert =$conn->prepare("INSERT INTO Login (Username, Password) VALUES (?, ?)");
+                $insert->bind_param("ss", $username,$password_hash);
+                $insert->execute();$success = "Account created. You can now sign in.";
             }
         }
     }
@@ -129,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <input type="password" name="password" placeholder="Password" required>
                     </div>
                     <button type="submit" class="action-btn">Sign In</button>
-                    <a href="#" class="forgot-link">I forgot my password</a>
+                    <a href="#" class="forgot-link" onclick="alert('Please contact the System Administrator to reset your password.'); return false;">I forgot my password</a>
                 </form>
             </div>
 
@@ -147,8 +132,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <div class="input-group">
                         <input type="text" name="reg_username" placeholder="Student ID / Email" required>
                     </div>
-                    <div class="input-group">
+                    <div class="input-group" style="margin-bottom: 5px;">
                         <input type="password" id="reg_password" name="reg_password" placeholder="Password" minlength="8" required>
+                    </div>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.8); text-align: left; margin-bottom: 20px; padding-left: 5px;">
+                        Minimum 8 characters, at least 1 special character.
                     </div>
                     <div class="input-group">
                         <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Password" minlength="8" required>
@@ -213,7 +201,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         registerForm.addEventListener('submit', function (event) {
             const matches = passwordInput.value === confirmInput.value;
-
             if (!matches) {
                 event.preventDefault();
                 updatePasswordMatch();
